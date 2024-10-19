@@ -131,12 +131,70 @@ class BVVectorPermutationNode:
         return float("NaN")
 
 
+class BVVectorEditDropdownNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        # Statische Einträge für die Dropdown-Option
+        static_entries = [
+            "INPUT LAYER", "MMDiT idx 0", "MMDiT idx 1", "MMDiT idx 2", "MMDiT idx 3", "MMDiT idx 4", "MMDiT idx 5",
+            "MMDiT idx 6", "MMDiT idx 7", "MMDiT idx 8", "MMDiT idx 9", "MMDiT idx 10", "MMDiT idx 11",
+            "MMDiT idx 12", "MMDiT idx 13", "MMDiT idx 14", "MMDiT idx 15", "MMDiT idx 16", "MMDiT idx 17",
+            "MMDiT idx 18", "DiT idx 0", "DiT idx 1", "DiT idx 2", "DiT idx 3", "DiT idx 4", "DiT idx 5",
+            "DiT idx 6", "DiT idx 7", "DiT idx 8", "DiT idx 9", "DiT idx 10", "DiT idx 11", "DiT idx 12",
+            "DiT idx 13", "DiT idx 14", "DiT idx 15", "DiT idx 16", "DiT idx 17", "DiT idx 18", "DiT idx 19",
+            "DiT idx 20", "DiT idx 21", "DiT idx 22", "DiT idx 23", "DiT idx 24", "DiT idx 25", "DiT idx 26",
+            "DiT idx 27", "DiT idx 28", "DiT idx 29", "DiT idx 30", "DiT idx 31", "DiT idx 32", "DiT idx 33",
+            "DiT idx 34", "DiT idx 35", "DiT idx 36", "DiT idx 37"
+        ]
+
+        return {
+            "required": {
+                "vector": ("LIST", {"element_type": "FLOAT"}),
+            },
+            "optional": {
+                "entry_index": (["CHOOSE"] + static_entries,),
+                "new_value": ("FLOAT", {"default": 0.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("LIST",)
+    RETURN_NAMES = ("VECTOR",)
+    FUNCTION = "edit_vector"
+    CATEGORY = "🌀 BVortex Nodes/Vectors"
+
+    def edit_vector(self, vector: list, entry_index: str, new_value: float):
+        static_entries = [
+            "INPUT LAYER", "MMDiT idx 0", "MMDiT idx 1", "MMDiT idx 2", "MMDiT idx 3", "MMDiT idx 4", "MMDiT idx 5",
+            "MMDiT idx 6", "MMDiT idx 7", "MMDiT idx 8", "MMDiT idx 9", "MMDiT idx 10", "MMDiT idx 11",
+            "MMDiT idx 12", "MMDiT idx 13", "MMDiT idx 14", "MMDiT idx 15", "MMDiT idx 16", "MMDiT idx 17",
+            "MMDiT idx 18", "DiT idx 0", "DiT idx 1", "DiT idx 2", "DiT idx 3", "DiT idx 4", "DiT idx 5",
+            "DiT idx 6", "DiT idx 7", "DiT idx 8", "DiT idx 9", "DiT idx 10", "DiT idx 11", "DiT idx 12",
+            "DiT idx 13", "DiT idx 14", "DiT idx 15", "DiT idx 16", "DiT idx 17", "DiT idx 18", "DiT idx 19",
+            "DiT idx 20", "DiT idx 21", "DiT idx 22", "DiT idx 23", "DiT idx 24", "DiT idx 25", "DiT idx 26",
+            "DiT idx 27", "DiT idx 28", "DiT idx 29", "DiT idx 30", "DiT idx 31", "DiT idx 32", "DiT idx 33",
+            "DiT idx 34", "DiT idx 35", "DiT idx 36", "DiT idx 37"
+        ]
+
+        print(str)
+        # Den Index der Auswahl ermitteln
+        if entry_index in static_entries:
+            index_number = static_entries.index(entry_index)
+            if index_number < len(vector):
+                vector[index_number] = new_value
+        return (vector,)
+
+    @classmethod
+    def IS_CHANGED(cls):
+        return False
+
+
 NODE_CLASS_MAPPINGS = {
     "BV Vector of Length-n": BVVectorOfLengthNNode,
     "BV Vector Edit": BVVectorEditNode,
     "BV Vector to String": BVVectorToStringNode,
     "BV Vector to String List": BVVectorToStringListNode,
     "BV Vector Permutation": BVVectorPermutationNode,
+    "BV Vector Edit Dropdown FLUX": BVVectorEditDropdownNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -145,4 +203,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BV Vector to String": "🌀 BV Vector to String",
     "BV Vector to String List": "🌀 BV Vector to String List",
     "BV Vector Permutation": "🌀 BV Vector Permutation",
+    "BV Vector Edit Dropdown FLUX": "🌀 BV Vector Edit Dropdown FLUX",
 }
