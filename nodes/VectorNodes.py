@@ -17,6 +17,10 @@ class BVVectorOfLengthNNode:
         vector = [default_value] * vector_length
         return (vector,)
 
+    @classmethod
+    def IS_CHANGED(self):
+        return float("NaN")
+
 
 class BVVectorEditNode:
     @classmethod
@@ -38,6 +42,10 @@ class BVVectorEditNode:
         if 0 <= entry_index < len(vector):
             vector[entry_index] = new_value
         return (vector,)
+
+    @classmethod
+    def IS_CHANGED(self):
+        return float("NaN")
 
 
 class BVVectorToStringNode:
@@ -82,6 +90,10 @@ class BVVectorToStringListNode:
         string_list = list(map(str, vector))
         return (string_list,)
 
+    @classmethod
+    def IS_CHANGED(self):
+        return float("NaN")
+
 
 class BVVectorPermutationNode:
     @classmethod
@@ -113,6 +125,10 @@ class BVVectorPermutationNode:
             # permutations.append(new_vector)
 
         return (permutations,)
+
+    @classmethod
+    def IS_CHANGED(self):
+        return float("NaN")
 
 
 NODE_CLASS_MAPPINGS = {
