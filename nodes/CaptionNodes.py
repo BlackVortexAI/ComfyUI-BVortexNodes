@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, ImageOps
 from .CustomDatatypes import BV_IMAGE_PIPE
 from .CustomDatatypes import BV_UPSCALE_CONFIG_PIPE
 
