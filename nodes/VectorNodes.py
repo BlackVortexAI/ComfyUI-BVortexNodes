@@ -188,6 +188,96 @@ class BVVectorEditDropdownNode:
         return False
 
 
+class BVVectorEditRangeDropdownNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        # Statische Einträge für die Dropdown-Option
+        static_entries = [
+            "INPUT LAYER", "MMDiT idx 0", "MMDiT idx 1", "MMDiT idx 2", "MMDiT idx 3", "MMDiT idx 4", "MMDiT idx 5",
+            "MMDiT idx 6", "MMDiT idx 7", "MMDiT idx 8", "MMDiT idx 9", "MMDiT idx 10", "MMDiT idx 11",
+            "MMDiT idx 12", "MMDiT idx 13", "MMDiT idx 14", "MMDiT idx 15", "MMDiT idx 16", "MMDiT idx 17",
+            "MMDiT idx 18", "DiT idx 0", "DiT idx 1", "DiT idx 2", "DiT idx 3", "DiT idx 4", "DiT idx 5",
+            "DiT idx 6", "DiT idx 7", "DiT idx 8", "DiT idx 9", "DiT idx 10", "DiT idx 11", "DiT idx 12",
+            "DiT idx 13", "DiT idx 14", "DiT idx 15", "DiT idx 16", "DiT idx 17", "DiT idx 18", "DiT idx 19",
+            "DiT idx 20", "DiT idx 21", "DiT idx 22", "DiT idx 23", "DiT idx 24", "DiT idx 25", "DiT idx 26",
+            "DiT idx 27", "DiT idx 28", "DiT idx 29", "DiT idx 30", "DiT idx 31", "DiT idx 32", "DiT idx 33",
+            "DiT idx 34", "DiT idx 35", "DiT idx 36", "DiT idx 37"
+        ]
+
+        return {
+            "required": {
+                "vector": ("LIST", {"element_type": "FLOAT"}),
+                "start_index": (["CHOOSE"] + static_entries,),
+                "end_index": (["CHOOSE"] + static_entries,),
+                "new_value": ("FLOAT", {"default": 0.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("LIST",)
+    RETURN_NAMES = ("VECTOR",)
+    FUNCTION = "edit_vector_range"
+    CATEGORY = "🌀 BVortex Nodes/Vectors"
+
+    def edit_vector_range(self, vector: list, start_index: str, end_index: str, new_value: float):
+        static_entries = [
+            "INPUT LAYER", "MMDiT idx 0", "MMDiT idx 1", "MMDiT idx 2", "MMDiT idx 3", "MMDiT idx 4", "MMDiT idx 5",
+            "MMDiT idx 6", "MMDiT idx 7", "MMDiT idx 8", "MMDiT idx 9", "MMDiT idx 10", "MMDiT idx 11",
+            "MMDiT idx 12", "MMDiT idx 13", "MMDiT idx 14", "MMDiT idx 15", "MMDiT idx 16", "MMDiT idx 17",
+            "MMDiT idx 18", "DiT idx 0", "DiT idx 1", "DiT idx 2", "DiT idx 3", "DiT idx 4", "DiT idx 5",
+            "DiT idx 6", "DiT idx 7", "DiT idx 8", "DiT idx 9", "DiT idx 10", "DiT idx 11", "DiT idx 12",
+            "DiT idx 13", "DiT idx 14", "DiT idx 15", "DiT idx 16", "DiT idx 17", "DiT idx 18", "DiT idx 19",
+            "DiT idx 20", "DiT idx 21", "DiT idx 22", "DiT idx 23", "DiT idx 24", "DiT idx 25", "DiT idx 26",
+            "DiT idx 27", "DiT idx 28", "DiT idx 29", "DiT idx 30", "DiT idx 31", "DiT idx 32", "DiT idx 33",
+            "DiT idx 34", "DiT idx 35", "DiT idx 36", "DiT idx 37"
+        ]
+
+        if start_index in static_entries and end_index in static_entries:
+            start_idx = static_entries.index(start_index)
+            end_idx = static_entries.index(end_index)
+            # Ensure end_idx is within bounds and greater than or equal to start_idx
+            end_idx = min(end_idx, len(vector))
+            for i in range(start_idx, end_idx):
+                if 0 <= i < len(vector):
+                    vector[i] = new_value
+
+        return (vector,)
+
+    @classmethod
+    def IS_CHANGED(cls):
+        return False
+
+
+class BVVectorEditRangeNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "vector": ("LIST", {"element_type": "FLOAT"}),
+                "start_index": ("INT", {"default": 0, "min": 0}),
+                "end_index": ("INT", {"default": 1, "min": 0}),
+                "new_value": ("FLOAT", {"default": 0.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("LIST",)
+    RETURN_NAMES = ("VECTOR",)
+    FUNCTION = "edit_vector_range"
+    CATEGORY = "🌀 BVortex Nodes/Vectors"
+
+    def edit_vector_range(self, vector: list, start_index: int, end_index: int, new_value: float):
+        # Ensure end_index is within bounds and greater than or equal to start_index
+        end_index = min(end_index, len(vector))
+        for i in range(start_index, end_index):
+            if 0 <= i < len(vector):
+                vector[i] = new_value
+        return (vector,)
+
+    @classmethod
+    def IS_CHANGED(self):
+        return float("NaN")
+
+
+
 NODE_CLASS_MAPPINGS = {
     "BV Vector of Length-n": BVVectorOfLengthNNode,
     "BV Vector Edit": BVVectorEditNode,
@@ -195,6 +285,8 @@ NODE_CLASS_MAPPINGS = {
     "BV Vector to String List": BVVectorToStringListNode,
     "BV Vector Permutation": BVVectorPermutationNode,
     "BV Vector Edit Dropdown FLUX": BVVectorEditDropdownNode,
+    "BV Vector Edit Range": BVVectorEditRangeNode,
+    "BV Vector Edit Range Dropdown FLUX": BVVectorEditRangeDropdownNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -204,4 +296,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "BV Vector to String List": "🌀 BV Vector to String List",
     "BV Vector Permutation": "🌀 BV Vector Permutation",
     "BV Vector Edit Dropdown FLUX": "🌀 BV Vector Edit Dropdown FLUX",
+    "BV Vector Edit Range": "🌀 BV Vector Edit Range",
+    "BV Vector Edit Range Dropdown FLUX": "🌀 BV Vector Edit Range Dropdown FLUX",
 }
