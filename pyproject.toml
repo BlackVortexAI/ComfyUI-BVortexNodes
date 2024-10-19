@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-bvortexnodes"
+description = "This repository contains a user-defined node for ComfyUI, currently there are nodes for capturing captions. But will be expanded in the future."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/BlackVortexAI/ComfyUI-BVortexNodes"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-BVortexNodes"
+Icon = ""
