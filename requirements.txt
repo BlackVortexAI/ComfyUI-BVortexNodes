@@ -1,3 +1,5 @@
 torch
 pillow
 numpy<2
+matplotlib
+scipy
