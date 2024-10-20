@@ -1,0 +1,3 @@
+torch
+pillow
+numpy<2
