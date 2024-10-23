@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-bvortexnodes"
 description = "This repository contains a user-defined node for ComfyUI, currently there are nodes for capturing captions. But will be expanded in the future."
-version = "1.0.2"
+version = "1.0.3"
 license = {file = "LICENSE"}
 dependencies = []
 

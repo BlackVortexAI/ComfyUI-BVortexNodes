@@ -4,6 +4,7 @@ import os
 import numpy as np
 import torch
 from PIL import Image, ImageOps
+from comfy_execution.graph import ExecutionBlocker
 from .CustomDatatypes import BV_IMAGE_PIPE
 from .CustomDatatypes import BV_UPSCALE_CONFIG_PIPE
 
@@ -42,7 +43,7 @@ class BVConditionalImagePipeSplitter:
 
     CATEGORY = "🌀 BVortex Nodes/Captioning"
 
-    def image_pipe_splitter(self, image_pipe: list[BV_IMAGE_PIPE], opt_caption_config_pipe: BV_UPSCALE_CONFIG_PIPE = None, upscale_lowres: bool = True, lowres_limit: int = 768):
+    def image_pipe_splitter(self, image_pipe: list, opt_caption_config_pipe=None, upscale_lowres=True, lowres_limit=768):
         to_upscale = []
         high_res_images = []
 
@@ -55,13 +56,17 @@ class BVConditionalImagePipeSplitter:
             limit = opt_caption_config_pipe.lowres_limit
             upscale = opt_caption_config_pipe.upscale_lowres
 
-
-
         for entry in image_pipe:
             if (entry.image.shape[2] < limit or entry.image.shape[1] < limit) and upscale:
                 to_upscale.append(entry)
             else:
                 high_res_images.append(entry)
+
+        # Verwende ExecutionBlocker, wenn keine Bilder in einer Liste vorhanden sind
+        if not to_upscale:
+            to_upscale = [ExecutionBlocker(None)]
+        if not high_res_images:
+            high_res_images = [ExecutionBlocker(None)]
 
         return to_upscale, high_res_images
 
@@ -153,9 +158,13 @@ class BVImagePipeJunction:
 
     FUNCTION = "image_pipe_junction"
 
-    CATEGORY = "🌀 BVortex Nodes/Captioning"
-
     def image_pipe_junction(self, image_pipe: list[BV_IMAGE_PIPE], images=None, captions=None):
+
+        # Prüfe auf ExecutionBlocker und blockiere die Ausgabe
+        if isinstance(image_pipe[0], ExecutionBlocker):
+            return ExecutionBlocker(None), ExecutionBlocker(None), ExecutionBlocker(None)
+
+        # Normale Verarbeitung, wenn kein ExecutionBlocker vorhanden ist
         if images is not None and len(image_pipe) != len(images):
             raise ValueError(
                 f"The size of images ({len(images)}) is not the same as the size of image_pipe ({len(image_pipe)})")
@@ -170,14 +179,8 @@ class BVImagePipeJunction:
             if captions is not None:
                 image_entry.caption = captions[i]
 
-
-        updated_images = []
-        updated_captions = []
-
-        for entry in image_pipe:
-            updated_images.append(entry.image)
-            updated_captions.append(entry.caption)
-
+        updated_images = [entry.image for entry in image_pipe]
+        updated_captions = [entry.caption for entry in image_pipe]
 
         return image_pipe, updated_images, updated_captions
 
@@ -274,14 +277,25 @@ class BVImagePipeMerger:
 
     FUNCTION = "image_pipe_merger"
 
-    CATEGORY = "🌀 BVortex Nodes/Captioning"
-
     def image_pipe_merger(self, image_pipe_1: list[BV_IMAGE_PIPE], image_pipe_2: list[BV_IMAGE_PIPE]):
-        merged_images = image_pipe_1 + image_pipe_2
+
+        # Prüfen auf ExecutionBlocker und blockiere die Ausgabe
+        if isinstance(image_pipe_1[0], ExecutionBlocker) and isinstance(image_pipe_2[0], ExecutionBlocker):
+            return ExecutionBlocker(None),
+
+        # Falls einer der Inputs ein Blocker ist, ignoriere diesen Input
+        if isinstance(image_pipe_1[0], ExecutionBlocker):
+            merged_images = image_pipe_2
+        elif isinstance(image_pipe_2[0], ExecutionBlocker):
+            merged_images = image_pipe_1
+        else:
+            # Beide sind gültig, also zusammenführen
+            merged_images = image_pipe_1 + image_pipe_2
 
         merged_images.sort(key=lambda x: x.count)
 
         return (merged_images,)
+
 
 
 class BVUpscaleConfig:
