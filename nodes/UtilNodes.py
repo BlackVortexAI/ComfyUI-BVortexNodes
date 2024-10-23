@@ -1,3 +1,6 @@
+from safetensors.torch import load_file
+import folder_paths as comfy_paths
+
 class BVImageSizeWithMath:
     @classmethod
     def INPUT_TYPES(s):
@@ -68,12 +71,42 @@ class BVStringToCombo:
         return (combo,)
 
 
+class BVLoraBlocksNode:
+    def __init__(self):
+        self.loaded_lora = None
+
+    @classmethod
+    def INPUT_TYPES(s):
+        file_list = comfy_paths.get_filename_list("loras")
+        file_list.insert(0, "None")
+        return {"required": {"lora_name": (file_list,)}}
+
+    RETURN_TYPES = ("LIST",)
+    RETURN_NAMES = ("LORA_BLOCKS",)
+    FUNCTION = "get_lora_blocks"
+    CATEGORY = "🌀 BVortex Nodes/Util"
+
+    def get_lora_blocks(self, lora_name):
+        try:
+            lora_path = comfy_paths.get_full_path("loras", lora_name)
+            # Load the state dictionary from the file
+            state_dict = load_file(lora_path)
+
+            # Extract and return the keys from the state dictionary
+            return list(state_dict.keys())
+        except Exception as e:
+            print(f"Error loading LoRA blocks: {e}")
+            return []
+
+
 NODE_CLASS_MAPPINGS = {
     "BV Image Size with Math": BVImageSizeWithMath,
-    "BV String to Combo": BVStringToCombo
+    "BV String to Combo": BVStringToCombo,
+    "BV Show LoRA Blocks": BVLoraBlocksNode
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "BV Image Size with Math": "🌀 BV Image Size with Math",
-    "BV String to Combo": "🌀 BV String to Combo"
+    "BV String to Combo": "🌀 BV String to Combo",
+    "BV Show LoRA Blocks": "🌀 BV Show LoRA Blocks"
 }
