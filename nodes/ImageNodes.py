@@ -20,8 +20,8 @@ class BVImageDifferenceHeatmap:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE")
-    RETURN_NAMES = ("heatmap", "overlay_image1", "overlay_image2")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "FLOAT")
+    RETURN_NAMES = ("heatmap", "overlay_image1", "overlay_image2", "difference_strength")
     FUNCTION = "process_difference"
     CATEGORY = "🌀 BVortex Nodes/Image Processing"
 
@@ -39,6 +39,9 @@ class BVImageDifferenceHeatmap:
         max_diff, _ = torch.max(difference.reshape(difference.size(0), -1), dim=1, keepdim=True)
         max_diff = max_diff.view(-1, 1, 1, 1)
         normalized_diff = difference / (max_diff + 1e-8)
+
+        # Calculate the overall difference strength as a float between 0 and 1
+        difference_strength = torch.mean(normalized_diff).item()
 
         # Step 3: Create the heatmap using Gaussian blur for smoothing
         heatmap = normalized_diff.mean(dim=1, keepdim=True)  # Convert to grayscale
@@ -83,7 +86,7 @@ class BVImageDifferenceHeatmap:
         overlay_image1 = torch.clamp(overlay_image1, 0, 1).permute(0, 2, 3, 1)
         overlay_image2 = torch.clamp(overlay_image2, 0, 1).permute(0, 2, 3, 1)
 
-        return heatmap_tensor, overlay_image1, overlay_image2
+        return heatmap_tensor, overlay_image1, overlay_image2, difference_strength
 
 
 NODE_CLASS_MAPPINGS = {
