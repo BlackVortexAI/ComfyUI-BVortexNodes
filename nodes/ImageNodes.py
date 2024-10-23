@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import io
 from PIL import Image
+import cv2
 
 
 class BVImageDifferenceHeatmap:
@@ -20,8 +21,8 @@ class BVImageDifferenceHeatmap:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "FLOAT")
-    RETURN_NAMES = ("heatmap", "overlay_image1", "overlay_image2", "difference_strength")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "FLOAT", "INT")
+    RETURN_NAMES = ("heatmap", "overlay_image1", "overlay_image2", "difference_strength", "mse_value")
     FUNCTION = "process_difference"
     CATEGORY = "🌀 BVortex Nodes/Image Processing"
 
@@ -86,7 +87,12 @@ class BVImageDifferenceHeatmap:
         overlay_image1 = torch.clamp(overlay_image1, 0, 1).permute(0, 2, 3, 1)
         overlay_image2 = torch.clamp(overlay_image2, 0, 1).permute(0, 2, 3, 1)
 
-        return heatmap_tensor, overlay_image1, overlay_image2, difference_strength
+        # Step 8: Calculate Mean Squared Error (MSE) between image1 and image2 using numpy
+        image1_np = image1.permute(0, 2, 3, 1).squeeze().cpu().numpy() * 255.0  # Convert to numpy and scale to [0, 255]
+        image2_np = image2.permute(0, 2, 3, 1).squeeze().cpu().numpy() * 255.0
+        mse_value = int(np.mean((image1_np - image2_np) ** 2))
+
+        return heatmap_tensor, overlay_image1, overlay_image2, difference_strength, mse_value
 
 
 NODE_CLASS_MAPPINGS = {
