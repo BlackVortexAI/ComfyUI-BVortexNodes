@@ -164,8 +164,6 @@ class BVVectorEditDropdownNode:
     CATEGORY = "🌀 BVortex Nodes/Vectors"
 
     def edit_vector(self, vector: list, entry_index: str, new_value: float):
-
-        # Den Index der Auswahl ermitteln
         if entry_index in static_entries:
             index_number = static_entries.index(entry_index)
             if index_number < len(vector):
@@ -199,7 +197,6 @@ class BVVectorEditRangeDropdownNode:
         if start_index in static_entries and end_index in static_entries:
             start_idx = static_entries.index(start_index)
             end_idx = static_entries.index(end_index)
-            # Ensure end_idx is within bounds and greater than or equal to start_idx
             end_idx = min(end_idx+1, len(vector))
             for i in range(start_idx, end_idx):
                 if 0 <= i < len(vector):
@@ -230,7 +227,6 @@ class BVVectorEditRangeNode:
     CATEGORY = "🌀 BVortex Nodes/Vectors"
 
     def edit_vector_range(self, vector: list, start_index: int, end_index: int, new_value: float):
-        # Ensure end_index is within bounds and greater than or equal to start_index
         end_index = min(end_index+1, len(vector))
         for i in range(start_index, end_index):
             if 0 <= i < len(vector):
@@ -245,7 +241,6 @@ class BVVectorEditRangeNode:
 class BVVectorEditBooleanNode:
     @classmethod
     def INPUT_TYPES(cls):
-        # Statische Einträge als Boolean-Felder statt Dropdown
         optional_fields = {
             entry: ("BOOLEAN", {
                 "default": False,
@@ -268,7 +263,6 @@ class BVVectorEditBooleanNode:
     CATEGORY = "🌀 BVortex Nodes/Vectors"
 
     def edit_vector(self, vector: list, new_value: float, **kwargs):
-        # Bearbeiten des Vektors basierend auf den aktivierten Boolean-Feldern
         for entry, is_active in kwargs.items():
             if isinstance(is_active, bool) and is_active:
                 normalized_entry = entry
