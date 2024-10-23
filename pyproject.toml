@@ -10,6 +10,6 @@ Repository = "https://github.com/BlackVortexAI/ComfyUI-BVortexNodes"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "@blackvortex"
+PublisherId = "blackvortex"
 DisplayName = "ComfyUI-BVortexNodes"
 Icon = ""
