@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 
+/* ---------- kleine Utils ---------- */
 function propKey(inputName) { return `__bv_${inputName}`; }
 function getProp(node, k, fallback) {
   node.properties = node.properties || {};
@@ -9,7 +10,20 @@ function setProp(node, k, v) {
   node.properties = node.properties || {};
   node.properties[k] = v;
 }
+function parseInputOptions(inputData, fallback = {}) {
+  // Comfy liefert hier: undefined | string | object | [type, options]
+  if (Array.isArray(inputData)) {
+    const [, opts] = inputData;
+    return (opts && typeof opts === "object") ? opts : fallback;
+  }
+  if (inputData && typeof inputData === "object") {
+    if (inputData.options && typeof inputData.options === "object") return inputData.options;
+    return inputData;
+  }
+  return fallback;
+}
 
+/* ---------- zeichnen ---------- */
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, h / 2, w / 2);
   ctx.beginPath();
@@ -38,43 +52,71 @@ function drawBar(ctx, x, y, w, h, t) {
   ctx.restore();
 }
 
-function makeEditableHeadingFactory({ fontSize=18, fontWeight=700, color=null, lineHeight=null, paddingY=6, multiline=false, placeholder="" }) {
+/* ---------- BV_SUB_TITLE / BV_SUB_HEADING ---------- */
+/* WICHTIG: serialize:true, damit Subgraph-Slots nicht verrutschen */
+function makeEditableHeadingFactory({
+  fontSize = 18,
+  fontWeight = 700,
+  color = null,
+  lineHeight = null,
+  paddingY = 6,
+  multiline = false,
+  placeholder = ""
+}) {
   return (node, inputName, inputData, _app) => {
-    const optsIn = (Array.isArray(inputData) && inputData[1]) ? inputData[1] : (inputData?.options || {});
+    const optsIn = parseInputOptions(inputData, {});
     const def = optsIn?.default ?? optsIn?.placeholder ?? placeholder;
-    const key = propKey(inputName);
-    const initial = (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key)) ? node.properties[key] : def;
+    const key = `__bv_${inputName}`;
 
-    const w = node.addWidget("text", inputName, initial, (v) => {
-      const val = v ?? "";
-      w.value = val;
-      setProp(node, key, val);
-      node.setDirtyCanvas(true, true);
-    }, { serialize:false, multiline, placeholder });
+    const initial = (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key))
+      ? node.properties[key] : def;
 
-    if (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key)) {
-      w.value = node.properties[key];
-    }
+    const w = node.addWidget(
+      "text",
+      inputName,
+      initial,
+      (v) => {
+        const val = (v ?? "").toString();
+        w.value = val;
+        setProp(node, key, val);
+        node.setDirtyCanvas(true, true);
+      },
+      { serialize: true, multiline, placeholder }  // Slot sichern
+    );
 
-    w.draw = function draw(ctx, n, widgetWidth, y) {
+    // Slot wirklich belegen (auch wenn UI noch nicht editiert wurde)
+    w.serialize = true;
+    w.serializeValue = () => {
+      const saved = (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key))
+        ? node.properties[key] : def;
+      return (saved ?? "").toString();
+    };
+
+    // visuell aktuell halten (optional)
+    const syncFromProps = () => {
+      const saved = (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key))
+        ? node.properties[key] : def;
+      if (w.value !== saved) w.value = saved;
+    };
+    const prevOnConfigure = node.onConfigure;
+    node.onConfigure = function (o) { syncFromProps(); if (prevOnConfigure) prevOnConfigure.call(this, o); };
+    const prevOnFG = node.onDrawForeground;
+    node.onDrawForeground = function (ctx) { syncFromProps(); if (prevOnFG) prevOnFG.call(this, ctx); };
+
+    // Custom draw
+    w.draw = function (ctx, n, widgetWidth, y) {
       const txt = (this.value ?? "").toString();
       const lines = txt.split("\n");
       const lh = lineHeight ?? fontSize + 2;
-
       ctx.save();
       ctx.font = `${fontWeight} ${fontSize}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = color ?? (n?.fgcolor || "#ddd");
       ctx.textBaseline = "top";
-
       let yy = y + paddingY;
-      for (const line of lines) {
-        ctx.fillText(line, 12, yy);
-        yy += lh;
-      }
+      for (const line of lines) { ctx.fillText(line, 12, yy); yy += lh; }
       ctx.restore();
     };
-
-    w.computeSize = function computeSize(widgetWidth) {
+    w.computeSize = function (widgetWidth) {
       const txt = (this.value ?? "").toString();
       const lines = Math.max(1, txt.split("\n").length);
       const lh = lineHeight ?? fontSize + 2;
@@ -85,6 +127,7 @@ function makeEditableHeadingFactory({ fontSize=18, fontWeight=700, color=null, l
   };
 }
 
+/* ---------- Divider (Dummy-Serialize, falls exposed) ---------- */
 function makeDividerFactory() {
   return (node, inputName) => {
     const w = node.addCustomWidget({
@@ -103,10 +146,14 @@ function makeDividerFactory() {
       },
       computeSize: function (widgetWidth) { return [widgetWidth, 16]; },
     });
+    // Falls jemand den Divider doch exposet: Platzhalter zurückgeben
+    w.serialize = true;
+    w.serializeValue = () => null;
     return { widget: w };
   };
 }
 
+/* ---------- Spacer (Dummy-Serialize, falls exposed) ---------- */
 function makeSpacerFactory() {
   return (node, inputName) => {
     const w = node.addCustomWidget({
@@ -121,10 +168,14 @@ function makeSpacerFactory() {
       },
       computeSize: function (widgetWidth) { return [widgetWidth, 50]; },
     });
+    // Falls exposet: ebenfalls Platzhalter
+    w.serialize = true;
+    w.serializeValue = () => null;
     return { widget: w };
   };
 }
 
+/* ---------- INT Slider ---------- */
 function makeIntSliderFactory() {
   return (node, inputName, inputData, _app) => {
     const defMin=0, defMax=100, defStep=1;
@@ -135,14 +186,14 @@ function makeIntSliderFactory() {
     const kPre  = propKey(`${inputName}_prefix`);
     const kSuf  = propKey(`${inputName}_suffix`);
 
-    const optsIn  = (Array.isArray(inputData) && inputData[1]) ? inputData[1] : (inputData?.options || {});
+    const optsIn = parseInputOptions(inputData, {});
     const initial = getProp(node, kVal, Number.isFinite(optsIn?.default) ? optsIn.default : 0);
 
-    node.addWidget("number", "min",    getProp(node,kMin, defMin),  v=>{ setProp(node,kMin,  Number.isFinite(v)? Math.floor(v):defMin); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
-    node.addWidget("number", "max",    getProp(node,kMax, defMax),  v=>{ setProp(node,kMax,  Number.isFinite(v)? Math.floor(v):defMax); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
-    node.addWidget("number", "step",   getProp(node,kStep,defStep), v=>{ setProp(node,kStep, Number.isFinite(v)? Math.max(1,Math.floor(v)):defStep); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
-    node.addWidget("text",   "prefix", getProp(node,kPre,""),       v=>{ setProp(node,kPre, v ?? ""); node.setDirtyCanvas(true,true); }, {serialize:false});
-    node.addWidget("text",   "suffix", getProp(node,kSuf,""),       v=>{ setProp(node,kSuf, v ?? ""); node.setDirtyCanvas(true,true); }, {serialize:false});
+    node.addWidget("number","min",  getProp(node,kMin,defMin),  v=>{ setProp(node,kMin,  Number.isFinite(v)? Math.floor(v):defMin); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
+    node.addWidget("number","max",  getProp(node,kMax,defMax),  v=>{ setProp(node,kMax,  Number.isFinite(v)? Math.floor(v):defMax); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
+    node.addWidget("number","step", getProp(node,kStep,defStep),v=>{ setProp(node,kStep, Number.isFinite(v)? Math.max(1,Math.floor(v)):defStep); node.setDirtyCanvas(true,true); }, {serialize:false, precision:0});
+    node.addWidget("text","prefix", getProp(node,kPre,""),      v=>{ setProp(node,kPre, v ?? ""); node.setDirtyCanvas(true,true); }, {serialize:false});
+    node.addWidget("text","suffix", getProp(node,kSuf,""),      v=>{ setProp(node,kSuf, v ?? ""); node.setDirtyCanvas(true,true); }, {serialize:false});
 
     function snapInt(v){
       const min=getProp(node,kMin,defMin);
@@ -158,7 +209,7 @@ function makeIntSliderFactory() {
 
     const { nv:start, min:sMin, max:sMax, step:sStep } = snapInt(initial);
 
-    const wValue = node.addWidget("slider", "value", start, v=>{
+    const wValue = node.addWidget("slider","value", start, v=>{
       const { nv } = snapInt(v);
       setProp(node,kVal,nv);
       wValue.value = nv;
@@ -167,10 +218,7 @@ function makeIntSliderFactory() {
 
     function applyOptionsFromProps(){
       const { min, max, step } = snapInt(getProp(node,kVal,wValue.value));
-      wValue.options.min = min;
-      wValue.options.max = max;
-      wValue.options.step = step;
-      wValue.options.precision = 0;
+      wValue.options.min = min; wValue.options.max = max; wValue.options.step = step; wValue.options.precision = 0;
     }
     applyOptionsFromProps();
 
@@ -181,8 +229,7 @@ function makeIntSliderFactory() {
       applyOptionsFromProps();
     }
 
-    const prevOnSerialize = node.onSerialize;
-    node.onSerialize = function(data){ ensureSynced(); if(prevOnSerialize) prevOnSerialize.call(this,data); };
+    // einzige Serialisierung
     wValue.serializeValue = function(){ ensureSynced(); return snapInt(getProp(node,kVal,wValue.value)).nv; };
 
     const prevOnConfigure = node.onConfigure;
@@ -220,6 +267,7 @@ function makeIntSliderFactory() {
   };
 }
 
+/* ---------- FIXED FLOAT Slider ---------- */
 function makeFixedFloatSliderFactory(FIXED_PREC) {
   return (node, inputName, inputData, _app) => {
     const defMin=0.0, defMax=1.0;
@@ -232,7 +280,7 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
     const kPre  = propKey(`${inputName}_prefix`);
     const kSuf  = propKey(`${inputName}_suffix`);
 
-    const optsIn  = (Array.isArray(inputData) && inputData[1]) ? inputData[1] : (inputData?.options || {});
+    const optsIn = parseInputOptions(inputData, {});
     const initial = getProp(node, kVal, Number.isFinite(optsIn?.default) ? optsIn.default : 0.0);
 
     node.addWidget("number","min",  getProp(node,kMin, defMin),  v=>{ setProp(node,kMin, Number.isFinite(v)? v : defMin); node.setDirtyCanvas(true,true); }, {serialize:false});
@@ -261,7 +309,7 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
 
     const { nv:start, min:sMin, max:sMax, step:sStep } = quantize(initial);
 
-    const wValue = node.addWidget("slider", "value", start, v=>{
+    const wValue = node.addWidget("slider","value", start, v=>{
       const { nv } = quantize(v);
       setProp(node,kVal,nv);
       wValue.value = nv;
@@ -270,10 +318,7 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
 
     function applyOptionsFromProps(){
       const { min, max, step } = quantize(getProp(node,kVal,wValue.value));
-      wValue.options.min = min;
-      wValue.options.max = max;
-      wValue.options.step = step;
-      wValue.options.precision = FIXED_PREC;
+      wValue.options.min = min; wValue.options.max = max; wValue.options.step = step; wValue.options.precision = FIXED_PREC;
     }
     applyOptionsFromProps();
 
@@ -283,9 +328,6 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
       wValue.value = nv;
       applyOptionsFromProps();
     }
-
-    const prevOnSerialize = node.onSerialize;
-    node.onSerialize = function(data){ ensureSynced(); if(prevOnSerialize) prevOnSerialize.call(this,data); };
     wValue.serializeValue = function(){ ensureSynced(); return quantize(getProp(node,kVal,wValue.value)).nv; };
 
     const prevOnConfigure = node.onConfigure;
@@ -296,11 +338,9 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
       const { min, max } = quantize(getProp(node,kVal,wValue.value));
       const val = Number(getProp(node,kVal,wValue.value));
       const t = (val - min) / Math.max(1e-9, (max - min));
-
       ctx.save();
       ctx.clearRect(x,y,w,h);
       drawBar(ctx, x, y+2, w, h-4, Math.max(0, Math.min(1, t)));
-
       const pre = getProp(node,kPre,"");
       const suf = getProp(node,kSuf,"");
       const text = `${pre}${val.toFixed(FIXED_PREC)}${suf}`;
@@ -325,6 +365,7 @@ function makeFixedFloatSliderFactory(FIXED_PREC) {
   };
 }
 
+/* ---------- Registrierung ---------- */
 app.registerExtension({
   name: "bv.subgraph.widgets",
   async getCustomWidgets() {
