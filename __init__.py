@@ -4,9 +4,11 @@ import os
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
+WEB_DIRECTORY = "./js"
+
 def load_nodes():
     current_dir = os.path.dirname(__file__)
-    nodes_dir = os.path.join(current_dir, 'nodes')  # Pfad zum 'nodes'-Unterordner
+    nodes_dir = os.path.join(current_dir, 'nodes')
     for filename in os.listdir(nodes_dir):
         if filename.endswith(".py") and filename != "__init__.py" and filename != "CustomDatatypes.py":
             module_name = filename[:-3]

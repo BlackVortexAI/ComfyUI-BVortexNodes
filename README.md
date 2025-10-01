@@ -1,10 +1,14 @@
 # BVortex Nodes for ComfyUI
 
-Welcome to BVortex Nodes, a collection of custom nodes designed to extend the functionality of [ComfyUI](https://github.com/comfyanonymous/ComfyUI), providing enhanced image processing capabilities, particularly in the domain of image captioning and resolution management.
+Welcome to BVortex Nodes, a collection of custom nodes designed to extend the functionality of [ComfyUI](https://github.com/comfyanonymous/ComfyUI), providing enhanced image processing capabilities, particularly in the domain of image captioning and resolution management. It also contains helper nodes that facilitate the use of subgraphs. 
 
 ## Node Details
 
 This repository contains several nodes that are specifically designed to work with ComfyUI's workflows. Below, you'll find descriptions of the main nodes included:
+
+### BV Subgraph Title / BV Subgraph Heading / BV Subgraph Divider /BV Subgraph Spacer
+
+These four nodes are used to connect to an input from a subgraph and generate a corresponding UI element in the subgraph node. This makes it possible to visually structure and separate input fields.
 
 ### BV Conditional ImagePipe Splitter
 
