@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-bvortexnodes"
 description = "This repository contains a user-defined node for ComfyUI, currently there are nodes for capturing captions and nodes that serve to insert subgraph titles, headings, separators and spacers. But will be expanded in the future."
-version = "1.0.8"
+version = "1.0.9"
 license = {file = "LICENSE"}
 dependencies = []
 
