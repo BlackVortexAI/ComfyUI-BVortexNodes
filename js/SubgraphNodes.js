@@ -1,18 +1,45 @@
 import { app } from "../../scripts/app.js";
 
-function makeEditableHeadingFactory({ fontSize = 18, fontWeight = 700, color = null, lineHeight = null, paddingY = 6, multiline = false, placeholder = "" }) {
+function getKey(inputName) {
+  // stabiler, eindeutiger Property-Key je Eingabename
+  return `__bv_${inputName}`;
+}
+
+function makeEditableHeadingFactory({
+  fontSize = 18,
+  fontWeight = 700,
+  color = null,
+  lineHeight = null,
+  paddingY = 6,
+  multiline = false,
+  placeholder = ""
+}) {
   return (node, inputName, inputData, _app) => {
-    const optsIn = (Array.isArray(inputData) && inputData[1]) ? inputData[1] : (inputData?.options || {});
-    const initial = optsIn?.default ?? optsIn?.placeholder ?? placeholder;
+    const optsIn = (Array.isArray(inputData) && inputData[1])
+      ? inputData[1]
+      : (inputData?.options || {});
+    const def = optsIn?.default ?? optsIn?.placeholder ?? placeholder;
+
+    const key = getKey(inputName);
+    const initial = (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key))
+      ? node.properties[key]
+      : def;
 
     const w = node.addWidget("text", inputName, initial, (v) => {
-      w.value = v ?? "";
+      const val = v ?? "";
+      w.value = val;
+      node.properties = node.properties || {};
+      node.properties[key] = val;
       node?.setDirtyCanvas(true, true);
     }, {
-      serialize: true,
-      multiline,                 // NOTE: true => mehrzeilig (öffnet Textarea)
-      placeholder,
+      serialize: false,
+      multiline,
+      placeholder
     });
+
+    if (node.properties && Object.prototype.hasOwnProperty.call(node.properties, key)) {
+      w.value = node.properties[key];
+    }
 
     w.draw = function draw(ctx, n, widgetWidth, y) {
       const txt = (this.value ?? "").toString();
@@ -48,7 +75,7 @@ function makeDividerFactory() {
     const w = node.addCustomWidget({
       type: "rv_divider",
       name: inputName,
-      serialize: false,
+      serialize: false, // nichts speichern
       draw: function (ctx, n, widgetWidth, y) {
         ctx.save();
         ctx.strokeStyle = n?.fgcolor || "#999";
@@ -70,24 +97,19 @@ function makeDividerFactory() {
 function makeSpacerFactory() {
   return (node, inputName) => {
     const w = node.addCustomWidget({
-      type: "rv_divider",
+      type: "rv_spacer",
       name: inputName,
       serialize: false,
-      draw: function (ctx, n, widgetWidth, y) {
+      draw: function (ctx, _n, widgetWidth, y) {
         ctx.save();
         ctx.fillStyle = "#00000000";
-        ctx.fillRect(8,y + 8, widgetWidth-8,50);
+        ctx.fillRect(8, y + 8, widgetWidth - 16, 50);
         ctx.restore();
       },
       computeSize: function (widgetWidth) {
-        return [widgetWidth, 16];
+        return [widgetWidth, 50];
       },
     });
-
-    w.computeSize = function computeSize(widgetWidth) {
-      return [widgetWidth, 50];
-    };
-
     return { widget: w };
   };
 }
